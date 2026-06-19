@@ -65,7 +65,7 @@ const gameServer = new Server({
 
 gameServer.define("monkey_room", GameRoom);
 
-const port = 2567;
+const port = process.env.PORT || 2567;
 httpServer.listen(port, () => {
     console.log(`🚀 猴子服务器已在本地启动: http://localhost:${port}`);
 });
