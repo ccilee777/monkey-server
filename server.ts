@@ -1,8 +1,7 @@
 import http from "http";
 import express from "express";
 import cors from "cors";
-// ⚠️ 引入了 matchMaker（官方的幕后发票员）
-import { Server, Room, Client, matchMaker } from "colyseus";
+import { Server, Room, Client } from "colyseus";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { Schema, MapSchema, type } from "@colyseus/schema";
 
@@ -44,6 +43,7 @@ class GameRoom extends Room {
 
 const app = express();
 
+// 完美跨域，确保手机能顺畅拿到数据
 app.use(cors({
     origin: true,
     credentials: true
@@ -51,22 +51,12 @@ app.use(cors({
 app.use(express.json()); 
 
 app.get("/", (req, res) => {
-    res.send("🐒 猴子服务器运行正常！"); 
-});
-
-// ⚠️ 终极破局魔法：我们自己手写一个售票处！
-// 拦截前端找房间的请求，让幕后发票员（matchMaker）直接把房间数据以 JSON 格式发给手机
-app.post("/matchmake/joinOrCreate/:roomName", async (req, res) => {
-    try {
-        const reservation = await matchMaker.joinOrCreate(req.params.roomName, req.body || {});
-        res.json(reservation); // 把门票完美交给前端，消灭 undefined 报错！
-    } catch (e: any) {
-        res.status(500).json({ error: e.message });
-    }
+    res.send("🐒 猴子服务器运行正常！匹配系统就绪！"); 
 });
 
 const httpServer = http.createServer(app);
 
+// 恢复官方最原生、最纯净的引擎架构（删除了我写的那个 Bug 售票处）
 const gameServer = new Server({
     transport: new WebSocketTransport({
         server: httpServer
