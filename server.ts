@@ -42,9 +42,12 @@ class GameRoom extends Room {
 
 const app = express();
 
-// 标准跨域与 JSON 解析
-app.use(cors()); 
-app.use(express.json()); 
+// ⚠️ 终极跨域修复：动态获取前端域名，拒绝使用通配符 '*'，允许凭证通行
+app.use(cors({
+    origin: true,
+    credentials: true
+})); 
+app.use(express.json());
 
 app.get("/", (req, res) => {
     res.send("🐒 猴子服务器运行正常！"); 
