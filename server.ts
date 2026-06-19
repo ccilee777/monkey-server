@@ -1,7 +1,8 @@
 import http from "http";
 import express from "express";
 import cors from "cors";
-import { Server, Room, Client } from "colyseus";
+// ⚠️ 引入了 matchMaker（官方的幕后发票员）
+import { Server, Room, Client, matchMaker } from "colyseus";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { Schema, MapSchema, type } from "@colyseus/schema";
 
@@ -43,7 +44,6 @@ class GameRoom extends Room {
 
 const app = express();
 
-// 完美跨域配置
 app.use(cors({
     origin: true,
     credentials: true
@@ -54,9 +54,19 @@ app.get("/", (req, res) => {
     res.send("🐒 猴子服务器运行正常！"); 
 });
 
+// ⚠️ 终极破局魔法：我们自己手写一个售票处！
+// 拦截前端找房间的请求，让幕后发票员（matchMaker）直接把房间数据以 JSON 格式发给手机
+app.post("/matchmake/joinOrCreate/:roomName", async (req, res) => {
+    try {
+        const reservation = await matchMaker.joinOrCreate(req.params.roomName, req.body || {});
+        res.json(reservation); // 把门票完美交给前端，消灭 undefined 报错！
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 const httpServer = http.createServer(app);
 
-// ⚠️ 修复点1：恢复 WebSocketTransport 包装，让 TypeScript 乖乖编译通过
 const gameServer = new Server({
     transport: new WebSocketTransport({
         server: httpServer
@@ -66,8 +76,5 @@ const gameServer = new Server({
 gameServer.define("monkey_room", GameRoom);
 
 const port = Number(process.env.PORT || 2567);
-
-// ⚠️ 修复点2：必须使用 gameServer.listen(port)！
-// 这是彻底消灭 404 的关键魔法，它会自动生成所有的联机接口！
 gameServer.listen(port);
 console.log(`🚀 猴子服务器已启动，监听端口: ${port}`);
