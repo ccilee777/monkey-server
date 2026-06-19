@@ -2,7 +2,6 @@ import http from "http";
 import express from "express";
 import cors from "cors";
 import { Server, Room, Client } from "colyseus";
-import { WebSocketTransport } from "@colyseus/ws-transport";
 import { Schema, MapSchema, type } from "@colyseus/schema";
 
 class Player extends Schema {
@@ -43,7 +42,7 @@ class GameRoom extends Room {
 
 const app = express();
 
-// 恢复最标准、最大兼容的 CORS 设置
+// 标准跨域与 JSON 解析
 app.use(cors()); 
 app.use(express.json()); 
 
@@ -53,15 +52,17 @@ app.get("/", (req, res) => {
 
 const httpServer = http.createServer(app);
 
+// ⚠️ 终极修复核心：直接传入 server 对象，不要套 WebSocketTransport！
+// 这样 Colyseus 才会自动把 /matchmake 匹配路由挂载到 Express 上
 const gameServer = new Server({
-    transport: new WebSocketTransport({
-        server: httpServer
-    })
+    server: httpServer 
 });
 
 gameServer.define("monkey_room", GameRoom);
 
 const port = Number(process.env.PORT || 2567);
-httpServer.listen(port, () => {
+
+// ⚠️ 启动方式必须改成 gameServer.listen 而不是 httpServer.listen
+gameServer.listen(port).then(() => {
     console.log(`🚀 猴子服务器已启动，监听端口: ${port}`);
 });
