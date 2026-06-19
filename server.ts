@@ -2,6 +2,7 @@ import http from "http";
 import express from "express";
 import cors from "cors";
 import { Server, Room, Client } from "colyseus";
+import { WebSocketTransport } from "@colyseus/ws-transport";
 import { Schema, MapSchema, type } from "@colyseus/schema";
 
 class Player extends Schema {
@@ -42,12 +43,12 @@ class GameRoom extends Room {
 
 const app = express();
 
-// ⚠️ 终极跨域修复：动态获取前端域名，拒绝使用通配符 '*'，允许凭证通行
+// 完美跨域配置
 app.use(cors({
     origin: true,
     credentials: true
 })); 
-app.use(express.json());
+app.use(express.json()); 
 
 app.get("/", (req, res) => {
     res.send("🐒 猴子服务器运行正常！"); 
@@ -55,17 +56,18 @@ app.get("/", (req, res) => {
 
 const httpServer = http.createServer(app);
 
-// ⚠️ 终极修复核心：直接传入 server 对象，不要套 WebSocketTransport！
-// 这样 Colyseus 才会自动把 /matchmake 匹配路由挂载到 Express 上
+// ⚠️ 修复点1：恢复 WebSocketTransport 包装，让 TypeScript 乖乖编译通过
 const gameServer = new Server({
-    server: httpServer 
+    transport: new WebSocketTransport({
+        server: httpServer
+    })
 });
 
 gameServer.define("monkey_room", GameRoom);
 
 const port = Number(process.env.PORT || 2567);
 
-// ⚠️ 启动方式必须改成 gameServer.listen 而不是 httpServer.listen
-gameServer.listen(port).then(() => {
-    console.log(`🚀 猴子服务器已启动，监听端口: ${port}`);
-});
+// ⚠️ 修复点2：必须使用 gameServer.listen(port)！
+// 这是彻底消灭 404 的关键魔法，它会自动生成所有的联机接口！
+gameServer.listen(port);
+console.log(`🚀 猴子服务器已启动，监听端口: ${port}`);
