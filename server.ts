@@ -42,32 +42,21 @@ class GameRoom extends Room {
 }
 
 const app = express();
+
+// 恢复最标准、最大兼容的 CORS 设置
 app.use(cors()); 
 app.use(express.json()); 
 
 app.get("/", (req, res) => {
-    res.send("🐒 猴子服务器运行正常！匹配系统已就绪！"); 
+    res.send("🐒 猴子服务器运行正常！"); 
 });
 
-// ⚠️ 终极核心：在源头分流，彻底杜绝 Express 抢跑和 404
-const httpServer = http.createServer((req, res) => {
-    if (req.url && req.url.startsWith("/matchmake")) {
-        // 遇到匹配请求，直接将 Express 拦在门外，让请求原封不动地交给 Colyseus 处理
-        return; 
-    }
-    // 其他请求（如访问主页探针）才交给 Express
-    app(req, res);
-});
+const httpServer = http.createServer(app);
 
 const gameServer = new Server({
     transport: new WebSocketTransport({
         server: httpServer
-    }),
-    // @ts-ignore: 强行在游戏引擎最底层注入正确的 CORS 规则，完美匹配前端的跨域凭证
-    cors: {
-        origin: true,
-        credentials: true
-    }
+    })
 });
 
 gameServer.define("monkey_room", GameRoom);
