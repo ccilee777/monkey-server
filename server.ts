@@ -42,11 +42,15 @@ class GameRoom extends Room {
 }
 
 const app = express();
-app.use(cors());
-// ⚠️ 终极修复 1：允许服务器解析前端发来的开房请求
+
+// ⚠️ 核心修复点：动态动态识别并允许前端的跨域凭证请求，解决 CORS 报错
+app.use(cors({
+    origin: true,         // 自动镜像匹配请求过来的前端网址（不再使用通配符 *）
+    credentials: true     // 允许携带凭证通行
+}));
+
 app.use(express.json()); 
 
-// ⚠️ 终极修复 2：加一个探针，以后直接访问网址就能知道服务器活没活着
 app.get("/", (req, res) => {
     res.send("🐒 猴子服务器运行正常！匹配系统已就绪！"); 
 });
@@ -61,7 +65,6 @@ const gameServer = new Server({
 
 gameServer.define("monkey_room", GameRoom);
 
-// ⚠️ 终极修复 3：强制转换端口类型，完美适配 Render 云环境
 const port = Number(process.env.PORT || 2567);
 httpServer.listen(port, () => {
     console.log(`🚀 猴子服务器已启动，监听端口: ${port}`);
